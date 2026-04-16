@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reels • Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .reels-container {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100vh;
+            scrollbar-width: none;
+            background-color: #000;
+        }
+        .reels-container::-webkit-scrollbar { display: none; }
+        .reel-section {
+            scroll-snap-align: start;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-color: #000;
+        }
+        .video-wrapper {
+            position: relative;
+            height: 92vh;
+            aspect-ratio: 9 / 16;
+            background-color: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        .reel-video { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+        .overlay-gradient { background: linear-gradient(transparent, rgba(0,0,0,0.9)); }
+        .sidebar-fix { background-color: white !important; color: black !important; z-index: 100; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Ensure the mute button is always visible */
+        #mute-toggle-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body class="bg-black text-white flex overflow-hidden">
+
+    <div class="sidebar-fix fixed h-full">
+        <%- include('partials/sidebar') %>
+    </div>
+
+    <div id="mute-toggle-container">
+        <button type="button" onclick="toggleGlobalMute()" class="bg-black/60 p-3 rounded-full border border-white/20 hover:bg-black/80 transition active:scale-90">
+            <span id="global-mute-icon" class="text-xl">🔇</span>
+        </button>
+    </div>
+
+    <div id="comment-modal" class="fixed inset-0 z- hidden flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div class="bg-white text-black w-full max-w-md rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[550px]">
+            <div class="p-4 border-b flex justify-between items-center bg-white">
+                <h3 class="font-bold text-lg">Comments</h3>
+                <button type="button" onclick="closeCommentModal()" class="text-2xl text-gray-400 hover:text-black">✕</button>
+            </div>
+            <div id="modal-comments-list" class="flex-grow overflow-y-auto p-4 space-y-4 no-scrollbar bg-gray-50">
+            </div>
+            <div class="p-4 border-t bg-white">
+                <div class="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
+                    <input type="text" id="modal-input" placeholder="Add a comment..." class="flex-grow outline-none text-sm bg-transparent">
+                    <button type="button" id="modal-submit-btn" class="text-blue-500 font-bold text-sm">Post</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-grow ml-16 xl:ml-64 reels-container">
+        <% if(reels && reels.length > 0) { %>
+            <% reels.forEach((reel) => { %>
+                <div class="reel-section">
+                    <div class="video-wrapper shadow-2xl">
+                        <video src="<%= reel.image %>" class="reel-video" loop playsinline onclick="togglePlayPause(this)"></video>
+
+                        <div class="absolute bottom-0 left-0 right-0 p-6 pt-20 overlay-gradient z-10">
+                            <div class="flex items-center gap-3 mb-3">
+                                <img src="<%= reel.user.profilePic %>" class="w-8 h-8 rounded-full border border-white/30 object-cover">
+                                <span class="font-bold text-sm"><%= reel.user.username %></span>
+                                <button type="button" class="border border-white/50 px-3 py-1 rounded-lg text-[11px] font-bold">Follow</button>
+                            </div>
+                            <p class="text-sm line-clamp-2 mb-4"><%= reel.caption %></p>
+                            
+                            <div class="flex items-center bg-white/10 rounded-full px-4 py-2 border border-white/10 backdrop-blur-md pointer-events-auto">
+                                <input type="text" id="input-<%= reel._id %>" placeholder="Add a comment..." 
+                                    class="bg-transparent outline-none text-xs flex-grow text-white placeholder-white/50"
+                                    onkeypress="if(event.key === 'Enter') handleComment('<%= reel._id %>')">
+                                <button type="button" onclick="handleComment('<%= reel._id %>')" class="text-blue-400 font-bold text-xs ml-2">Post</button>
+                            </div>
+                        </div>
+
+                        <div class="absolute bottom-24 right-3 flex flex-col gap-6 text-center z-20">
+                            <div class="flex flex-col items-center gap-1">
+                                <button type="button" onclick="toggleLike('<%= reel._id %>')" id="btn-<%= reel._id %>" class="text-2xl transition active:scale-95">
+                                    <%= reel.likes.includes(user._id) ? '❤️' : '🤍' %>
+                                </button>
+                                <span id="count-<%= reel._id %>" class="text-[11px] font-semibold"><%= reel.likes.length %></span>
+                            </div>
+
+                            <div class="flex flex-col items-center gap-1">
+                                <button type="button" onclick="openCommentModal('<%= reel._id %>')" class="text-3xl">💬</button>
+                                <span id="comm-count-<%= reel._id %>" class="text-[11px] font-semibold"><%= reel.comments.length %></span>
+                            </div>
+
+                            <button type="button" class="text-2xl hover:opacity-70">✈️</button>
+                            <button type="button" class="text-2xl hover:opacity-70">⋮</button>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </div>
+
+    <script>
+        const socket = io();
+        const currentUserId = "<%= user._id %>";
+        const currentUsername = "<%= user.username %>";
+        let isGlobalMuted = true;
+        let activePostId = null;
+
+        function toggleGlobalMute() {
+            isGlobalMuted = !isGlobalMuted;
+            const vids = document.querySelectorAll('.reel-video');
+            const icon = document.getElementById('global-mute-icon');
+            
+            vids.forEach(v => {
+                v.muted = isGlobalMuted;
+            });
+            icon.innerText = isGlobalMuted ? '🔇' : '🔊';
+        }
+
+        function togglePlayPause(v) { 
+            v.paused ? v.play() : v.pause(); 
+        }
+
+        async function toggleLike(postId) {
+            const btn = document.getElementById(`btn-${postId}`);
+            const countEl = document.getElementById(`count-${postId}`);
+            const isLiking = btn.innerText.trim() === '🤍';
+            btn.innerText = isLiking ? '❤️' : '🤍';
+            countEl.innerText = isLiking ? parseInt(countEl.innerText) + 1 : parseInt(countEl.innerText) - 1;
+
+            const res = await fetch(`/post/${postId}/like`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                socket.emit('postLiked', { postId, likerId: currentUserId, username: currentUsername, postOwnerId: data.postOwnerId, action: data.action, senderPic: data.senderPic });
+            }
+        }
+
+        async function handleComment(postId) {
+            const input = document.getElementById(`input-${postId}`);
+            const text = input.value;
+            if(!text.trim()) return;
+
+            const res = await fetch(`/post/${postId}/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await res.json();
+            if(data.success) {
+                input.value = '';
+                const cCount = document.getElementById(`comm-count-${postId}`);
+                if(cCount) cCount.innerText = parseInt(cCount.innerText) + 1;
+                socket.emit('newComment', { ...data, postId });
+                if(activePostId === postId) appendToModal(data.comment);
+            }
+        }
+
+        function openCommentModal(postId) {
+            activePostId = postId;
+            document.getElementById('comment-modal').classList.remove('hidden');
+            const list = document.getElementById('modal-comments-list');
+            list.innerHTML = '<p class="text-center mt-10 text-gray-400 text-sm">Loading...</p>';
+
+            fetch(`/post/api/comments/${postId}`)
+                .then(res => res.json())
+                .then(data => {
+                    list.innerHTML = '';
+                    if(!data.comments || data.comments.length === 0) {
+                        list.innerHTML = '<p class="text-center mt-10 text-gray-400 text-sm">No comments yet.</p>';
+                    } else {
+                        data.comments.forEach(c => appendToModal(c));
+                    }
+                });
+        }
+
+        function closeCommentModal() { 
+            document.getElementById('comment-modal').classList.add('hidden'); 
+            activePostId = null; 
+        }
+
+        function appendToModal(c) {
+            const list = document.getElementById('modal-comments-list');
+            const div = document.createElement('div');
+            div.className = "flex gap-3 items-start mb-4";
+            div.innerHTML = `<img src="${c.user.profilePic}" class="w-8 h-8 rounded-full border object-cover"><div><p class="text-sm"><span class="font-bold">${c.user.username}</span> ${c.text}</p></div>`;
+            list.appendChild(div);
+            list.scrollTop = list.scrollHeight;
+        }
+
+        document.getElementById('modal-submit-btn').onclick = () => {
+            const input = document.getElementById('modal-input');
+            if(input.value.trim() && activePostId) handleComment(activePostId);
+            input.value = '';
+        };
+
+        const obs = new IntersectionObserver((es) => {
+            es.forEach(e => {
+                const v = e.target.querySelector('video');
+                if (e.isIntersecting) { 
+                    v.muted = isGlobalMuted; 
+                    v.play().catch(()=>{}); 
+                }
+                else { 
+                    v.pause(); 
+                    v.currentTime = 0; 
+                }
+            });
+        }, { threshold: 0.8 });
+        document.querySelectorAll('.reel-section').forEach(s => obs.observe(s));
+    </script>
+</body>
+</html>

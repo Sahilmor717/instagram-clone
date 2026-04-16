@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Post • Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 flex">
+
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-grow ml-16 xl:ml-64 flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white border border-gray-300 rounded-xl w-full max-w-[420px] overflow-hidden shadow-md">
+            
+            <div class="border-b p-3 flex justify-between items-center bg-white">
+                <button onclick="window.history.back()" class="text-sm font-semibold hover:text-gray-500">Cancel</button>
+                <h1 class="font-semibold text-[16px]">Create new post</h1>
+                <button form="create-form" type="submit" class="text-blue-500 font-bold text-sm hover:text-blue-700 transition">Share</button>
+            </div>
+
+            <form id="create-form" action="/post/create" method="POST" enctype="multipart/form-data">
+                
+                <div id="preview-container" class="aspect-square bg-gray-50 flex flex-col items-center justify-center border-b relative overflow-hidden group">
+                    
+                    <div id="upload-placeholder" class="flex flex-col items-center gap-4 text-center px-6">
+                        <div class="text-6xl mb-2">🎞️</div>
+                        <p class="text-xl font-light text-gray-600">Drag photos and videos here</p>
+                        <button type="button" onclick="document.getElementById('file-input').click()" class="bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold active:scale-95 transition">
+                            Select from computer
+                        </button>
+                    </div>
+
+                    <input type="file" id="file-input" name="image" accept="image/*,video/*" class="hidden" onchange="previewMedia(event)" required>
+                    
+                    <img id="image-preview" class="hidden w-full h-full object-cover">
+                    <video id="video-preview" class="hidden w-full h-full object-cover" controls muted loop></video>
+
+                    <button type="button" id="change-btn" onclick="document.getElementById('file-input').click()" 
+                        class="hidden absolute bottom-4 right-4 bg-black/60 hover:bg-black/80 text-white px-3 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-sm transition">
+                        🔄 Change Selection
+                    </button>
+                </div>
+
+                <div class="p-4 bg-white">
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="<%= user.profilePic %>" class="w-8 h-8 rounded-full border border-gray-200 object-cover">
+                        <span class="font-semibold text-sm"><%= user.username %></span>
+                    </div>
+                    
+                    <textarea 
+                        name="caption" 
+                        placeholder="Write a caption..." 
+                        class="w-full h-24 outline-none text-[15px] resize-none placeholder-gray-400" 
+                        maxlength="2200"
+                    ></textarea>
+                </div>
+
+                <div class="px-4 py-2 border-t flex justify-between text-gray-400 text-[11px]">
+                    <span>Max size: 50MB</span>
+                    <span id="char-count">0/2200</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function previewMedia(event) {
+            const file = event.target.files;
+            const placeholder = document.getElementById('upload-placeholder');
+            const imgPrev = document.getElementById('image-preview');
+            const videoPrev = document.getElementById('video-preview');
+            const changeBtn = document.getElementById('change-btn');
+
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                const fileType = file.type;
+
+                // Toggle visibility
+                placeholder.classList.add('hidden');
+                changeBtn.classList.remove('hidden');
+
+                if (fileType.startsWith('image/')) {
+                    imgPrev.src = fileURL;
+                    imgPrev.classList.remove('hidden');
+                    videoPrev.classList.add('hidden');
+                    videoPrev.pause(); 
+                } else if (fileType.startsWith('video/')) {
+                    videoPrev.src = fileURL;
+                    videoPrev.classList.remove('hidden');
+                    imgPrev.classList.add('hidden');
+                    videoPrev.play();
+                }
+            }
+        }
+
+        // Live Character Count Logic
+        const textarea = document.querySelector('textarea[name="caption"]');
+        const charCount = document.getElementById('char-count');
+        
+        textarea.addEventListener('input', (e) => {
+            charCount.innerText = `${e.target.value.length}/2200`;
+        });
+    </script>
+
+    <style>
+        /* Modern scrollbar for the whole page */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+    </style>
+</body>
+</html>

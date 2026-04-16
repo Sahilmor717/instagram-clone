@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= user.username %> • Instagram Photos and Videos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #dbdbdb; border-radius: 10px; }
+        
+        /* Layout Fixes */
+        body { 
+            background-color: #fff;
+            overflow: hidden; /* Prevent double scrollbars */
+        }
+
+        .scrollable-content {
+            height: 100vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Profile Nav Tabs */
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 16px 0;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #8e8e8e;
+            transition: all 0.2s ease;
+            border-top: 1px solid transparent;
+        }
+
+        .tab-btn.active {
+            border-top: 1px solid #262626;
+            color: #262626 !important;
+            margin-top: -1px;
+        }
+
+        /* Image/Video Grid */
+        .grid-item {
+            position: relative;
+            background-color: #efefef;
+            overflow: hidden;
+        }
+
+        .grid-item img, .grid-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Overlay */
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 10;
+        }
+
+        .grid-item:hover .grid-overlay {
+            opacity: 1;
+        }
+
+        /* Reels specific sizing */
+        .reels-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+    </style>
+</head>
+<body class="flex">
+
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-grow ml-16 xl:ml-64 scrollable-content">
+        <div class="w-full max-w-4xl mx-auto pt-8 px-4 md:px-8 pb-20">
+            
+            <header class="flex items-start gap-8 md:gap-24 mb-10">
+                <div class="flex-shrink-0">
+                    <div class="w-20 h-20 md:w-36 md:h-36 rounded-full p-[2px] border border-gray-200">
+                        <img src="<%= user.profilePic %>" class="w-full h-full rounded-full object-cover">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-5 flex-grow">
+                    <div class="flex items-center gap-4 flex-wrap">
+                        <h2 class="text-xl font-light"><%= user.username %></h2>
+                        <% if(typeof isOwner !== 'undefined' && isOwner === true) { %>
+                            <a href="/edit-profile" class="bg-gray-100 hover:bg-gray-200 px-4 py-1.5 rounded-lg text-sm font-semibold">
+                                Edit profile
+                            </a>
+                            <button class="text-lg">⚙️</button>
+                        <% } %>
+                    </div>
+
+                    <div class="flex gap-10 text-base">
+                        <span><strong class="font-semibold"><%= posts.length %></strong> posts</span>
+                        <span><strong class="font-semibold"><%= user.followers.length %></strong> followers</span>
+                        <span><strong class="font-semibold"><%= user.following.length %></strong> following</span>
+                    </div>
+
+                    <div class="text-sm">
+                        <h3 class="font-semibold"><%= user.fullname || user.username %></h3>
+                        <p class="whitespace-pre-wrap mt-1"><%= user.bio || 'Desi Chora 💪' %></p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex justify-center border-t border-gray-200">
+                <div class="flex gap-12 md:gap-16">
+                    <button onclick="changeTab('posts')" id="btn-posts" class="tab-btn active">
+                        <svg aria-label="" color="rgb(38, 38, 38)" fill="rgb(38, 38, 38)" height="12" role="img" viewBox="0 0 24 24" width="12"><rect fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="18" x="3" y="3"></rect><line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" x1="3" x2="21" y1="9.015" y2="9.015"></line><line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" x1="3" x2="21" y1="14.985" y2="14.985"></line><line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" x1="9.015" x2="9.015" y1="3" y2="21"></line><line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" x1="14.985" x2="14.985" y1="3" y2="21"></line></svg>
+                        POSTS
+                    </button>
+                    <button onclick="changeTab('reels')" id="btn-reels" class="tab-btn">
+                        <svg aria-label="" color="rgb(142, 142, 142)" fill="rgb(142, 142, 142)" height="12" role="img" viewBox="0 0 24 24" width="12"><line fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2" x1="2.049" x2="21.95" y1="7.002" y2="7.002"></line><line fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2" x1="13.504" x2="16.362" y1="2.001" y2="7.002"></line><line fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="2" x1="7.207" x2="10.002" y1="2.11" y2="7.002"></line><path d="M2 12V7.22a1.66 1.66 0 011.66-1.66h16.68A1.66 1.66 0 0122 7.22V12" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M17 12v6.78a1.66 1.66 0 01-1.66 1.66H8.66A1.66 1.66 0 017 18.78V12" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" x1="12" x2="12" y1="14.506" y2="18.504"></line></svg>
+                        REELS
+                    </button>
+                </div>
+            </div>
+
+            <div id="grid-posts" class="grid grid-cols-3 gap-1 md:gap-4 mt-2">
+                <% if(posts && posts.length > 0) { %>
+                    <% posts.forEach(post => { %>
+                        <a href="/post/<%= post._id %>" class="grid-item aspect-square">
+                            <% if (post.image.match(/\.(mp4|mov|avi|mkv|webm)$/i)) { %>
+                                <video src="<%= post.image %>" muted preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>
+                                <div class="absolute top-2 right-2 text-white">🎬</div>
+                            <% } else { %>
+                                <img src="<%= post.image %>">
+                            <% } %>
+                            <div class="grid-overlay">
+                                <span>❤️ <%= post.likes.length %></span>
+                                <span>💬 <%= post.comments.length %></span>
+                            </div>
+                        </a>
+                    <% }) %>
+                <% } %>
+            </div>
+
+            <div id="grid-reels" class="hidden grid grid-cols-3 gap-1 md:gap-4 mt-2">
+                <% 
+                    const reelData = posts.filter(p => p.image.match(/\.(mp4|mov|avi|mkv|webm)$/i));
+                    if(reelData.length > 0) { 
+                        reelData.forEach(reel => { 
+                %>
+                    <a href="/reels#section-<%= reel._id %>" class="grid-item aspect-[9/16] bg-black">
+                        <video src="<%= reel.image %>" muted preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>
+                        <div class="absolute bottom-4 left-4 text-white text-xs font-bold flex items-center gap-1">
+                            <span>▶</span> <%= reel.likes.length %>
+                        </div>
+                    </a>
+                <% }); } else { %>
+                    <div class="col-span-3 py-20 text-center text-gray-400">No reels shared yet.</div>
+                <% } %>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function changeTab(tabName) {
+            const gridPosts = document.getElementById('grid-posts');
+            const gridReels = document.getElementById('grid-reels');
+            const btnPosts = document.getElementById('btn-posts');
+            const btnReels = document.getElementById('btn-reels');
+
+            if (tabName === 'posts') {
+                gridPosts.classList.remove('hidden');
+                gridReels.classList.add('hidden');
+                btnPosts.classList.add('active');
+                btnReels.classList.remove('active');
+            } else {
+                gridPosts.classList.add('hidden');
+                gridReels.classList.remove('hidden');
+                btnReels.classList.add('active');
+                btnPosts.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>

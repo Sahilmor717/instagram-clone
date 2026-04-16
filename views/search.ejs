@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search • Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-white flex">
+
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-grow ml-16 xl:ml-64 flex justify-center min-h-screen">
+        <div class="w-full max-w-lg mt-10 px-4">
+            
+            <h2 class="text-2xl font-bold mb-6 px-2">Search</h2>
+            
+            <form action="/search" method="GET" class="mb-8 px-2">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        🔍
+                    </span>
+                    <input type="text" name="username" placeholder="Search" 
+                        value="<%= typeof query !== 'undefined' ? query : '' %>"
+                        class="w-full bg-gray-100 border border-transparent focus:border-gray-300 p-2.5 pl-10 rounded-xl outline-none transition">
+                </div>
+            </form>
+
+            <div class="flex flex-col">
+                <% if(typeof foundUsers !== 'undefined' && foundUsers.length > 0) { %>
+                    <% foundUsers.forEach(foundUser => { %>
+                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition cursor-pointer">
+                            <div class="flex items-center gap-4">
+                                <div class="w-11 h-11 rounded-full overflow-hidden border border-gray-200">
+                                    <img src="<%= foundUser.profilePic %>" class="w-full h-full object-cover">
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-sm"><%= foundUser.username %></span>
+                                    <span class="text-gray-500 text-xs"><%= foundUser.username %></span>
+                                </div>
+                            </div>
+                            <a href="/user/<%= foundUser._id %>" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-1.5 rounded-lg text-sm font-semibold transition">
+                                View
+                            </a>
+                        </div>
+                    <% }) %>
+                <% } else if(typeof query !== 'undefined' && query.length > 0) { %>
+                    <div class="text-center mt-20">
+                        <p class="text-gray-500 font-medium">No results found for "<%= query %>"</p>
+                    </div>
+                <% } else { %>
+                    <div class="text-center mt-32 flex flex-col items-center">
+                        <span class="text-6xl opacity-20 mb-4">🔍</span>
+                        <p class="text-gray-400 text-sm">Search for friends and creators</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

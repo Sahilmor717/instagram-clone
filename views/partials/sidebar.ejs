@@ -1,0 +1,81 @@
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<div class="fixed left-0 top-0 h-screen w-16 xl:w-64 border-r border-gray-300 bg-white flex flex-col justify-between py-5 px-3 xl:px-4 z-50">
+    
+    <div>
+        <div class="mb-10 px-2 mt-4">
+            <h1 class="hidden xl:block text-2xl font-serif font-bold tracking-tight">Instagram</h1>
+            <div class="xl:hidden flex justify-center">
+                <i data-lucide="instagram" class="w-7 h-7"></i>
+            </div>
+        </div>
+
+        <nav class="flex flex-col gap-1">
+            <a href="/feed" class="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-xl transition duration-200 group">
+                <i data-lucide="home" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden xl:block text-[16px] font-medium">Home</span>
+            </a>
+
+            <a href="/search" class="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-xl transition duration-200 group">
+                <i data-lucide="search" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden xl:block text-[16px]">Search</span>
+            </a>
+
+            <a href="/reels" class="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-xl transition duration-200 group">
+                <i data-lucide="clapperboard" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden xl:block text-[16px]">Reels</span>
+            </a>
+
+            <a href="/messages" class="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-xl transition duration-200 group">
+                <i data-lucide="message-circle" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden xl:block text-[16px]">Messages</span>
+            </a>
+
+            <a href="/notifications" class="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-xl transition duration-200 group">
+                <i data-lucide="heart" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden xl:block text-[16px]">Notifications</span>
+            </a>
+
+            <a href="/post/create" class="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-xl transition duration-200 group">
+                <i data-lucide="plus-square" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden xl:block text-[16px]">Create</span>
+            </a>
+
+            <a href="/profile" class="flex items-center gap-4 p-3 hover:bg-gray-100 rounded-xl transition duration-200 group">
+                <i data-lucide="user" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+                <span class="hidden xl:block text-[16px]">Profile</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="mb-4">
+        <a href="/logout" class="flex items-center gap-4 p-3 hover:bg-red-50 rounded-xl transition duration-200 group text-red-600">
+            <i data-lucide="log-out" class="w-6 h-6 group-hover:rotate-12 transition-transform"></i>
+            <span class="hidden xl:block text-[16px] font-semibold">Logout</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    // Initialize icons
+    lucide.createIcons();
+</script>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    .main-content {
+        margin-left: 4rem;
+    }
+    @media (min-width: 1280px) {
+        .main-content {
+            margin-left: 16rem;
+        }
+    }
+    /* Optional: Fine-tune Lucide icon stroke width for a cleaner look */
+    .lucide {
+        stroke-width: 2px;
+    }
+</style>

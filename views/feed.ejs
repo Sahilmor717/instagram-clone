@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .animate-toast { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-gray-50 flex">
+
+    <%- include('partials/sidebar') %>
+
+    <div id="notification-toast" class="fixed top-5 right-5 z-50 hidden animate-toast pointer-events-none">
+        <div class="bg-white border border-gray-200 shadow-2xl rounded-xl p-4 flex items-center gap-3 w-72">
+            <div id="toast-pic-container" class="w-10 h-10 rounded-full overflow-hidden border hidden">
+                <img id="toast-pic" src="" class="w-full h-full object-cover">
+            </div>
+            <div class="text-xl" id="toast-icon">🔔</div>
+            <div>
+                <p id="toast-msg" class="text-sm font-semibold text-gray-800"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-grow ml-16 xl:ml-64 flex justify-center min-h-screen pb-10">
+        <div class="w-full max-w-[470px] mt-10 px-2 md:px-0">
+            
+            <div class="flex flex-col gap-8">
+                <% if(posts && posts.length > 0) { %>
+                    <% posts.forEach(post => { %>
+                        <div class="bg-white border border-gray-300 rounded-lg pb-2 shadow-sm">
+                            <div class="flex items-center p-3 gap-3">
+                                <div class="w-8 h-8 rounded-full overflow-hidden border">
+                                    <img src="<%= post.user.profilePic %>" class="w-full h-full object-cover">
+                                </div>
+                                <span class="font-semibold text-sm"><%= post.user.username %></span>
+                            </div>
+
+                            <div class="w-full bg-black flex items-center justify-center min-h-[300px]">
+                                <img src="<%= post.image %>" class="w-full h-auto object-contain">
+                            </div>
+
+                            <div class="p-3">
+                                <div class="flex gap-4 mb-2 items-center">
+                                    <button onclick="toggleLike('<%= post._id %>')" id="btn-<%= post._id %>" class="text-2xl outline-none transition active:scale-90">
+                                        <%= post.likes.includes(user._id) ? '❤️' : '🤍' %>
+                                    </button>
+                                    <button onclick="document.getElementById('input-<%= post._id %>').focus()" class="text-2xl hover:opacity-50">💬</button>
+                                </div>
+
+                                <p class="text-sm font-bold mb-1" id="count-<%= post._id %>"><%= post.likes.length %> likes</p>
+
+                                <div class="text-sm mb-2">
+                                    <span class="font-bold mr-2"><%= post.user.username %></span>
+                                    <span><%= post.caption %></span>
+                                </div>
+
+                                <div class="space-y-1 mb-3" id="comments-list-<%= post._id %>">
+                                    <% post.comments.forEach(comment => { %>
+                                        <p class="text-sm">
+                                            <span class="font-bold mr-2"><%= comment.user.username %></span>
+                                            <span class="text-gray-700 text-sm"><%= comment.text %></span>
+                                        </p>
+                                    <% }) %>
+                                </div>
+
+                                <form onsubmit="event.preventDefault(); handleComment('<%= post._id %>');" class="flex items-center border-t pt-2">
+                                    <input type="text" id="input-<%= post._id %>" placeholder="Add a comment..." class="flex-grow text-sm outline-none bg-transparent">
+                                    <button type="submit" class="text-blue-500 font-semibold text-sm ml-2 hover:text-blue-700">Post</button>
+                                </form>
+                            </div>
+                        </div>
+                    <% }) %>
+                <% } else { %>
+                    <div class="text-center mt-20 text-gray-500">No posts available.</div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const socket = io();
+    const currentUserId = "<%= user._id %>";
+    const currentUsername = "<%= user.username %>";
+
+    function showToast(message, profilePic = null) {
+        const toast = document.getElementById('notification-toast');
+        const msg = document.getElementById('toast-msg');
+        const picContainer = document.getElementById('toast-pic-container');
+        const picImg = document.getElementById('toast-pic');
+        const icon = document.getElementById('toast-icon');
+
+        msg.innerText = message;
+        
+        if (profilePic) {
+            picImg.src = profilePic;
+            picContainer.classList.remove('hidden');
+            icon.classList.add('hidden');
+        } else {
+            picContainer.classList.add('hidden');
+            icon.classList.remove('hidden');
+        }
+
+        toast.classList.remove('hidden');
+        setTimeout(() => { toast.classList.add('hidden'); }, 4000);
+    }
+
+    // Toggle Like Function
+    async function toggleLike(postId) {
+        const btn = document.getElementById(`btn-${postId}`);
+        const countElement = document.getElementById(`count-${postId}`);
+        let currentCount = parseInt(countElement.innerText);
+
+        const isLiking = btn.innerText.trim() === '🤍';
+        
+        // Optimistic UI Update
+        btn.innerText = isLiking ? '❤️' : '🤍';
+        countElement.innerText = (isLiking ? currentCount + 1 : currentCount - 1) + " likes";
+
+        try {
+            const res = await fetch(`/post/${postId}/like`, { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.success) {
+                socket.emit('postLiked', { 
+                    postId: postId, 
+                    likerId: currentUserId,
+                    username: currentUsername,
+                    postOwnerId: data.postOwnerId,
+                    action: data.action, 
+                    senderPic: data.senderPic,
+                    postImage: data.postImage
+                });
+            } else {
+                location.reload(); // Rollback on error
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    // Handle New Comment
+    async function handleComment(postId) {
+        const input = document.getElementById(`input-${postId}`);
+        const text = input.value;
+        if (!text.trim()) return;
+
+        try {
+            const res = await fetch(`/post/${postId}/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                input.value = '';
+                socket.emit('newComment', { 
+                    postId: postId, 
+                    username: data.comment.user.username, 
+                    text: text,
+                    postOwnerId: data.postOwnerId,
+                    senderPic: data.senderPic,
+                    postImage: data.postImage
+                });
+            }
+        } catch (err) { console.error(err); }
+    }
+
+    // Socket Event: Update Like Count and Show Toast
+    socket.on('updateUI', (data) => {
+        if (data.likerId !== currentUserId) {
+            const countElement = document.getElementById(`count-${data.postId}`);
+            if (countElement) {
+                fetch(`/post/api/count/${data.postId}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        countElement.innerText = d.count + " likes";
+                    });
+            }
+
+            if (data.postOwnerId === currentUserId && data.action === 'like') {
+                showToast(`${data.username} liked your post!`, data.senderPic);
+            }
+        }
+    });
+
+    // Socket Event: Display New Comment and Show Toast
+    socket.on('displayComment', (data) => {
+        const list = document.getElementById(`comments-list-${data.postId}`);
+        if (list) {
+            const p = document.createElement('p');
+            p.className = "text-sm border-l-2 border-blue-400 pl-2 ml-1";
+            p.innerHTML = `<span class="font-bold mr-2">${data.username}</span><span>${data.text}</span>`;
+            list.appendChild(p);
+        }
+
+        if (data.postOwnerId === currentUserId && data.username !== currentUsername) {
+            showToast(`${data.username} commented on your post!`, data.senderPic);
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile • Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex">
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-grow ml-16 xl:ml-64 flex justify-center items-center min-h-screen">
+        <div class="bg-white border border-gray-300 rounded-md p-8 w-full max-w-lg shadow-sm">
+            <h2 class="text-2xl font-semibold mb-8">Edit Profile</h2>
+            
+            <form action="/edit-profile" method="POST" enctype="multipart/form-data" class="flex flex-col gap-6">
+                
+                <div class="flex items-center gap-5">
+                    <img src="<%= user.profilePic %>" class="w-14 h-14 rounded-full object-cover">
+                    <div>
+                        <p class="font-bold text-sm"><%= user.username %></p>
+                        <label for="profilePic" class="text-blue-500 text-sm font-bold cursor-pointer hover:text-blue-700">Change profile photo</label>
+                        <input type="file" id="profilePic" name="profilePic" class="hidden" accept="image/*">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold mb-2">Bio</label>
+                    <textarea name="bio" rows="3" class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:border-gray-500" placeholder="Tell us about yourself..."><%= user.bio %></textarea>
+                </div>
+
+                <div class="flex justify-end gap-4 mt-4">
+                    <a href="/profile" class="py-2 px-4 text-sm font-bold">Cancel</a>
+                    <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded font-bold hover:bg-blue-600 transition">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications • Instagram</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-white text-gray-900 flex">
+
+    <%- include('partials/sidebar') %>
+
+    <div class="flex-grow ml-16 xl:ml-64 flex justify-center min-h-screen">
+        <div class="w-full max-w-lg mt-10 px-4">
+            <h2 class="text-2xl font-bold mb-6 px-2">Notifications</h2>
+
+            <div id="notifications-container" class="flex flex-col gap-1">
+                <% if (notifications && notifications.length > 0) { %>
+                    <% notifications.forEach(notif => { %>
+                        <% if (notif.sender) { %>
+                            <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition duration-200">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-11 h-11 rounded-full overflow-hidden border border-gray-100 flex-shrink-0">
+                                        <img src="<%= notif.sender.profilePic || '/images/profiles/default.png' %>" class="w-full h-full object-cover">
+                                    </div>
+                                    
+                                    <p class="text-sm">
+                                        <span class="font-bold"><%= notif.sender.username %></span>
+                                        <%= notif.type === 'like' ? 'liked your post.' : 'commented on your post.' %>
+                                        <span class="text-gray-400 text-xs block mt-0.5">
+                                            <%= new Date(notif.createdAt).toLocaleDateString() %>
+                                        </span>
+                                    </p>
+                                </div>
+
+                                <% if (notif.post) { %>
+                                    <div class="w-11 h-11 rounded overflow-hidden border border-gray-200 flex-shrink-0">
+                                        <img src="<%= notif.post.image %>" class="w-full h-full object-cover">
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% } %>
+                    <% }) %>
+                <% } else { %>
+                    <div id="empty-state" class="text-center mt-32 text-gray-500">
+                        <p class="text-4xl mb-4 opacity-20">🔔</p>
+                        <p>No notifications yet.</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const currentUserId = "<%= user._id %>";
+
+        socket.on('updateUI', (data) => {
+            if (String(data.postOwnerId) === String(currentUserId) && String(data.likerId) !== String(currentUserId) && data.action === 'like') {
+                addNewNotificationRow(data, 'liked your post.');
+            }
+        });
+
+        socket.on('displayComment', (data) => {
+            if (String(data.postOwnerId) === String(currentUserId) && data.username !== "<%= user.username %>") {
+                addNewNotificationRow(data, `commented: "${data.text}"`);
+            }
+        });
+
+        function addNewNotificationRow(data, message) {
+            const container = document.getElementById('notifications-container');
+            const emptyState = document.getElementById('empty-state');
+            if (emptyState) emptyState.remove();
+
+            const div = document.createElement('div');
+            div.className = "flex items-center justify-between p-3 bg-blue-50 rounded-lg mb-1";
+            
+            const senderPic = data.senderPic || '/images/profiles/default.png';
+            const postPic = data.postImage;
+
+            div.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
+                        <img src="${senderPic}" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-sm">
+                        <span class="font-bold">${data.username}</span> ${message}
+                        <span class="text-blue-500 text-xs block mt-0.5 font-semibold">Just now</span>
+                    </p>
+                </div>
+                ${postPic ? `
+                    <div class="w-11 h-11 rounded overflow-hidden border border-gray-200 flex-shrink-0">
+                        <img src="${postPic}" class="w-full h-full object-cover">
+                    </div>
+                ` : ''}
+            `;
+            container.prepend(div);
+            setTimeout(() => div.classList.replace('bg-blue-50', 'bg-white'), 5000);
+        }
+    </script>
+</body>
+</html>
